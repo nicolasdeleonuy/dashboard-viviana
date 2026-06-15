@@ -338,7 +338,8 @@ function renderAvance(rows) {
     if (!marca) continue;
     var cont = parseInt(r[1]) || 0;
     var pub  = parseInt(r[3]) || 0;
-    var pct  = parseFloat((r[5] || '').replace(',', '.')) || 0;
+    var pct  = parseFloat((r[5] || '').replace('%', '').replace(',', '.')) || 0;
+    pct = pct / 100; // el Sheet guarda como "36.7%", convertir a fracción 0..1
 
     if (marca.toUpperCase() === 'TOTAL') {
       totalPub = pub; totalCont = cont; totalPct = pct;
