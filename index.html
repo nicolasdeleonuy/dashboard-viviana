@@ -14,6 +14,7 @@
       --yellow: #f57f17;
       --gray: #9e9e9e;
       --text: #1a1a2e;
+      --header-h: 65px;
     }
 
     body {
@@ -23,32 +24,58 @@
       min-height: 100vh;
     }
 
+    /* ---- HEADER ---- */
     header {
       background: var(--navy);
       color: white;
-      padding: 16px 20px 12px;
+      padding: 14px 20px 10px;
       position: sticky;
       top: 0;
-      z-index: 10;
+      z-index: 20;
       box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      height: var(--header-h);
     }
 
     header h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.3px; }
     #updated { font-size: 0.72rem; opacity: 0.7; margin-top: 3px; }
 
-    /* --- BANNER ULTIMA ACTUALIZACION --- */
-    #nico-banner {
-      background: #eef0fa;
-      border: 1px solid #c5caf0;
-      border-radius: 10px;
-      padding: 10px 14px;
-      margin-bottom: 14px;
-      font-size: 0.82rem;
-      color: var(--navy);
-      font-weight: 600;
-      text-align: center;
+    /* ---- TABS ---- */
+    .tab-bar {
+      display: flex;
+      background: white;
+      border-bottom: 2px solid #e8e8e8;
+      position: sticky;
+      top: var(--header-h);
+      z-index: 10;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
 
+    .tab-btn {
+      flex: 1;
+      padding: 11px 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-align: center;
+      border: none;
+      background: none;
+      color: #aaa;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: color 0.15s;
+    }
+
+    .tab-btn.active {
+      color: var(--navy);
+      border-bottom-color: var(--navy);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ---- MAIN LAYOUT ---- */
     main {
       padding: 14px;
       max-width: 580px;
@@ -74,7 +101,20 @@
       border-bottom: 2px solid #eef0fa;
     }
 
-    /* --- TOTAL --- */
+    /* ---- BANNER NICO ---- */
+    #nico-banner {
+      background: #eef0fa;
+      border: 1px solid #c5caf0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      font-size: 0.82rem;
+      color: var(--navy);
+      font-weight: 600;
+      text-align: center;
+    }
+
+    /* ---- TOTAL ---- */
     .total-block { text-align: center; padding: 4px 0 18px; }
 
     .total-numbers {
@@ -88,7 +128,7 @@
     .total-numbers .slash { color: #bbb; font-size: 2.2rem; margin: 0 4px; font-weight: 400; }
     .total-pct { font-size: 1rem; color: var(--gray); margin-top: 6px; }
 
-    /* --- PROGRESS BAR --- */
+    /* ---- PROGRESS BAR ---- */
     .bar-wrap {
       background: #e8e8e8;
       border-radius: 100px;
@@ -107,12 +147,8 @@
     .bar-fill.yellow { background: var(--yellow); }
     .bar-fill.gray   { background: #ccc; }
 
-    /* --- BRAND LIST --- */
-    .brand-row {
-      padding: 10px 0;
-      border-top: 1px solid #f2f2f2;
-    }
-
+    /* ---- BRAND LIST ---- */
+    .brand-row { padding: 10px 0; border-top: 1px solid #f2f2f2; }
     .brand-row:first-child { border-top: none; }
 
     .brand-header {
@@ -125,7 +161,7 @@
     .brand-name { font-weight: 600; font-size: 0.92rem; }
     .brand-count { font-size: 0.82rem; color: var(--gray); }
 
-    /* --- PLAN / RUTA --- */
+    /* ---- PLAN / RUTA ---- */
     .day-row {
       padding: 11px 12px;
       border-radius: 10px;
@@ -134,17 +170,9 @@
       border-left: 4px solid transparent;
     }
 
-    .day-row.today {
-      background: #eef0fa;
-      border-left-color: var(--navy);
-    }
+    .day-row.today { background: #eef0fa; border-left-color: var(--navy); }
 
-    .day-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
+    .day-header { display: flex; justify-content: space-between; align-items: center; }
     .day-date { font-weight: 700; font-size: 0.9rem; }
     .day-row.today .day-date { color: var(--navy); }
 
@@ -162,12 +190,7 @@
 
     .day-total { font-size: 0.8rem; color: var(--gray); white-space: nowrap; }
 
-    .day-brands {
-      margin-top: 6px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-    }
+    .day-brands { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
 
     .chip {
       background: white;
@@ -178,7 +201,74 @@
       color: #555;
     }
 
-    /* --- STATES --- */
+    /* ---- VIDEOS TAB ---- */
+    .filter-bar {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .filter-chip {
+      padding: 5px 13px;
+      border-radius: 100px;
+      border: 1.5px solid #ddd;
+      background: white;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .filter-chip.active {
+      background: var(--navy);
+      border-color: var(--navy);
+      color: white;
+    }
+
+    .videos-meta {
+      font-size: 0.75rem;
+      color: var(--gray);
+      margin-bottom: 10px;
+    }
+
+    .videos-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 0 -4px;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+
+    th {
+      text-align: left;
+      padding: 8px 10px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--navy);
+      border-bottom: 2px solid #eef0fa;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    th:hover { background: #f8f9ff; }
+
+    .sort-icon { margin-left: 3px; opacity: 0.35; font-size: 0.65rem; }
+    .sort-icon.on { opacity: 1; }
+
+    td { padding: 9px 10px; border-bottom: 1px solid #f2f2f2; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+
+    .td-fecha { white-space: nowrap; color: #777; font-size: 0.78rem; }
+    .td-marca { font-weight: 600; color: var(--navy); font-size: 0.8rem; white-space: nowrap; }
+    .td-obs   { color: #888; font-size: 0.78rem; }
+
+    /* ---- LOADING / ERROR ---- */
     #loading {
       text-align: center;
       padding: 56px 16px;
@@ -223,21 +313,50 @@
   <p id="updated">Cargando...</p>
 </header>
 
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="avance" onclick="showTab('avance')">Avance</button>
+  <button class="tab-btn" data-tab="ruta" onclick="showTab('ruta')">Ruta</button>
+  <button class="tab-btn" data-tab="videos" onclick="showTab('videos')">Videos</button>
+</div>
+
 <div id="loading">
   <div class="spinner"></div>
   <p>Cargando datos...</p>
 </div>
 
 <main id="main" style="display:none">
-  <div id="nico-banner"></div>
-  <section>
-    <h2>Tu avance de este mes</h2>
-    <div id="avance-content"></div>
-  </section>
-  <section>
-    <h2>Ruta a seguir</h2>
-    <div id="plan-content"></div>
-  </section>
+  <div id="nico-banner" style="display:none"></div>
+
+  <!-- PESTAÑA: AVANCE -->
+  <div id="tab-avance" class="tab-panel active">
+    <section>
+      <h2>Tu avance de este mes</h2>
+      <div id="avance-content"></div>
+    </section>
+  </div>
+
+  <!-- PESTAÑA: RUTA -->
+  <div id="tab-ruta" class="tab-panel">
+    <section>
+      <h2>Ruta a seguir</h2>
+      <div id="plan-content"></div>
+    </section>
+  </div>
+
+  <!-- PESTAÑA: VIDEOS -->
+  <div id="tab-videos" class="tab-panel">
+    <section>
+      <h2>Videos subidos</h2>
+      <div class="filter-bar" id="filter-bar"></div>
+      <div class="videos-meta" id="videos-meta"></div>
+      <div class="videos-table-wrap">
+        <table>
+          <thead id="videos-thead"></thead>
+          <tbody id="videos-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
 </main>
 
 <div id="error-block">
@@ -249,7 +368,7 @@
 var SHEET_ID = '1V5n2q1Ng-ROmSszFEknCUiO4Q6-EmHAJuiLUAAN-178';
 var BASE = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv';
 
-// RFC 4180 CSV parser
+/* ---- CSV parser RFC 4180 ---- */
 function parseCSV(text) {
   var rows = [];
   var row = [], field = '', inQ = false;
@@ -278,7 +397,7 @@ async function fetchSheet(sheet, range) {
   return parseCSV(await res.text());
 }
 
-// Date helpers
+/* ---- Date helpers ---- */
 function parseDate(s) {
   if (!s) return null;
   s = s.trim();
@@ -313,7 +432,17 @@ function fmtDate(d) {
   return days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()];
 }
 
-// Banner: última actualización de Nico (Resumen A13:D13)
+/* ---- TABS ---- */
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.tab === name);
+  });
+  document.getElementById('tab-' + name).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+/* ---- BANNER NICO ---- */
 function renderNicoUpdate(rows) {
   var text = rows && rows[0] && rows[0][0] ? rows[0][0].trim() : '';
   var el = document.getElementById('nico-banner');
@@ -325,9 +454,7 @@ function renderNicoUpdate(rows) {
   }
 }
 
-// Sección 1: avance del mes
-// Hoja "Retainers" A3:G25 → fila 0 = headers
-// cols: 0=Marca, 1=Contratados, 3=Publicados, 4=Faltan, 5=%Avance (0..1)
+/* ---- AVANCE DEL MES ---- */
 function renderAvance(rows) {
   var totalPub = 0, totalCont = 0, totalPct = 0;
   var brands = [];
@@ -339,7 +466,7 @@ function renderAvance(rows) {
     var cont = parseInt(r[1]) || 0;
     var pub  = parseInt(r[3]) || 0;
     var pct  = parseFloat((r[5] || '').replace('%', '').replace(',', '.')) || 0;
-    pct = pct / 100; // el Sheet guarda como "36.7%", convertir a fracción 0..1
+    pct = pct / 100;
 
     if (marca.toUpperCase() === 'TOTAL') {
       totalPub = pub; totalCont = cont; totalPct = pct;
@@ -375,10 +502,7 @@ function renderAvance(rows) {
   document.getElementById('avance-content').innerHTML = html;
 }
 
-// Sección 2: ruta a seguir
-// Hoja "Plan dinámico" A19:I50 → fila 0 = headers
-// cols: 0=Fecha, 1=Joyspring, 2=Veggie Doctor, 3=Celtic Salt, 4=K2O,
-//       5=Kind Patches MB, 6=Kind Patches Red, 7=Ceelike, 8=Total día
+/* ---- RUTA A SEGUIR ---- */
 function renderPlan(rows) {
   var brandNames = ['Joyspring','Veggie Doctor','Celtic Salt','K2O','Kind Patches MB','Kind Patches Red','Ceelike'];
   var hoy = todayMidnight();
@@ -429,7 +553,140 @@ function renderPlan(rows) {
   document.getElementById('plan-content').innerHTML = html;
 }
 
-// Carga principal
+/* ---- VIDEOS ---- */
+var allVideos = [];
+var videoSort = { col: 'fecha', dir: 'desc' };
+var videoFilter = null;
+
+var VIDEO_COLS = [
+  { key: 'fecha',    label: 'Fecha' },
+  { key: 'producto', label: 'Producto' },
+  { key: 'obs',      label: 'Observaciones' },
+  { key: 'marca',    label: 'Marca' }
+];
+
+function processVideos(rows) {
+  // cols: A=fecha(0), B=producto(1), C=Marca(2), D=observaciones(3)
+  var result = [];
+  var brandsSet = {};
+
+  for (var i = 1; i < rows.length; i++) {
+    var r = rows[i];
+    var fecha   = (r[0] || '').trim();
+    var producto = (r[1] || '').trim();
+    var marca   = (r[2] || '').trim();
+    var obs     = (r[3] || '').trim();
+    if (!fecha && !producto && !marca) continue;
+
+    var d = parseDate(fecha);
+    result.push({ fecha: fecha, producto: producto, marca: marca, obs: obs, _ts: d ? d.getTime() : 0 });
+    if (marca) brandsSet[marca] = true;
+  }
+
+  allVideos = result;
+
+  // Build filter chips
+  var brands = Object.keys(brandsSet).sort(function(a,b){ return a.localeCompare(b, 'es'); });
+  var filterBar = document.getElementById('filter-bar');
+  filterBar.innerHTML = '';
+
+  var allChip = document.createElement('button');
+  allChip.className = 'filter-chip active';
+  allChip.textContent = 'Todas';
+  allChip.addEventListener('click', function() { setVideoFilter(null); });
+  filterBar.appendChild(allChip);
+
+  for (var j = 0; j < brands.length; j++) {
+    (function(brand) {
+      var chip = document.createElement('button');
+      chip.className = 'filter-chip';
+      chip.textContent = brand;
+      chip.addEventListener('click', function() { setVideoFilter(brand); });
+      filterBar.appendChild(chip);
+    })(brands[j]);
+  }
+
+  renderVideosHeader();
+  renderVideosBody();
+}
+
+function setVideoFilter(marca) {
+  videoFilter = marca;
+  document.querySelectorAll('#filter-bar .filter-chip').forEach(function(c) {
+    var isAll = (marca === null && c.textContent === 'Todas');
+    var isBrand = (marca !== null && c.textContent === marca);
+    c.classList.toggle('active', isAll || isBrand);
+  });
+  renderVideosBody();
+}
+
+function setVideoSort(col) {
+  if (videoSort.col === col) {
+    videoSort.dir = videoSort.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    videoSort.col = col;
+    videoSort.dir = 'asc';
+  }
+  renderVideosHeader();
+  renderVideosBody();
+}
+
+function renderVideosHeader() {
+  var html = '<tr>';
+  for (var i = 0; i < VIDEO_COLS.length; i++) {
+    var col = VIDEO_COLS[i];
+    var isActive = videoSort.col === col.key;
+    var arrow = isActive ? (videoSort.dir === 'asc' ? '▲' : '▼') : '⇅';
+    html += '<th onclick="setVideoSort(\'' + col.key + '\')">'
+      + col.label
+      + ' <span class="sort-icon' + (isActive ? ' on' : '') + '">' + arrow + '</span>'
+      + '</th>';
+  }
+  html += '</tr>';
+  document.getElementById('videos-thead').innerHTML = html;
+}
+
+function renderVideosBody() {
+  var data = allVideos;
+
+  if (videoFilter) {
+    data = data.filter(function(v) { return v.marca === videoFilter; });
+  }
+
+  data = data.slice().sort(function(a, b) {
+    var va, vb;
+    if (videoSort.col === 'fecha') {
+      va = a._ts; vb = b._ts;
+    } else {
+      va = (a[videoSort.col] || '').toLowerCase();
+      vb = (b[videoSort.col] || '').toLowerCase();
+    }
+    var cmp = va < vb ? -1 : va > vb ? 1 : 0;
+    return videoSort.dir === 'asc' ? cmp : -cmp;
+  });
+
+  document.getElementById('videos-meta').textContent =
+    data.length + ' video' + (data.length !== 1 ? 's' : '');
+
+  var html = '';
+  for (var i = 0; i < data.length; i++) {
+    var v = data[i];
+    html += '<tr>'
+      + '<td class="td-fecha">' + escHtml(v.fecha) + '</td>'
+      + '<td>' + escHtml(v.producto) + '</td>'
+      + '<td class="td-obs">' + escHtml(v.obs) + '</td>'
+      + '<td class="td-marca">' + escHtml(v.marca) + '</td>'
+      + '</tr>';
+  }
+
+  document.getElementById('videos-tbody').innerHTML = html || '<tr><td colspan="4" style="text-align:center;padding:20px;color:#aaa">Sin resultados</td></tr>';
+}
+
+function escHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ---- CARGA PRINCIPAL ---- */
 async function loadData() {
   document.getElementById('loading').style.display = 'block';
   document.getElementById('main').style.display = 'none';
@@ -439,12 +696,14 @@ async function loadData() {
     var results = await Promise.all([
       fetchSheet('Retainers', 'A3:G25'),
       fetchSheet('Plan dinámico', 'A19:I50'),
-      fetchSheet('Resumen', 'A13:D13')
+      fetchSheet('Resumen', 'A13:D13'),
+      fetchSheet('videos', 'A1:D300')
     ]);
 
     renderAvance(results[0]);
     renderPlan(results[1]);
     renderNicoUpdate(results[2]);
+    processVideos(results[3]);
 
     var now = new Date();
     var hhmm = now.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' });
