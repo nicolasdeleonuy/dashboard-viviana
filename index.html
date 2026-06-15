@@ -36,6 +36,19 @@
     header h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.3px; }
     #updated { font-size: 0.72rem; opacity: 0.7; margin-top: 3px; }
 
+    /* --- BANNER ULTIMA ACTUALIZACION --- */
+    #nico-banner {
+      background: #eef0fa;
+      border: 1px solid #c5caf0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      font-size: 0.82rem;
+      color: var(--navy);
+      font-weight: 600;
+      text-align: center;
+    }
+
     main {
       padding: 14px;
       max-width: 580px;
@@ -216,6 +229,7 @@
 </div>
 
 <main id="main" style="display:none">
+  <div id="nico-banner"></div>
   <section>
     <h2>Tu avance de este mes</h2>
     <div id="avance-content"></div>
@@ -271,10 +285,12 @@ function parseDate(s) {
   var m;
   m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+  // dd/mm/yyyy (formato europeo — el Sheet exporta así)
   m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (m) return new Date(+m[3], +m[1] - 1, +m[2]);
+  if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
+  // dd/mm/yy
   m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
-  if (m) return new Date(2000 + +m[3], +m[1] - 1, +m[2]);
+  if (m) return new Date(2000 + +m[3], +m[2] - 1, +m[1]);
   var d = new Date(s);
   return isNaN(d.getTime()) ? null : d;
 }
@@ -295,6 +311,18 @@ function fmtDate(d) {
   var days = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
   var months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   return days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()];
+}
+
+// Banner: última actualización de Nico (Resumen A13:D13)
+function renderNicoUpdate(rows) {
+  var text = rows && rows[0] && rows[0][0] ? rows[0][0].trim() : '';
+  var el = document.getElementById('nico-banner');
+  if (text) {
+    el.textContent = '📋 ' + text;
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
 }
 
 // Sección 1: avance del mes
@@ -409,11 +437,13 @@ async function loadData() {
   try {
     var results = await Promise.all([
       fetchSheet('Retainers', 'A3:G25'),
-      fetchSheet('Plan dinámico', 'A19:I50')
+      fetchSheet('Plan dinámico', 'A19:I50'),
+      fetchSheet('Resumen', 'A13:D13')
     ]);
 
     renderAvance(results[0]);
     renderPlan(results[1]);
+    renderNicoUpdate(results[2]);
 
     var now = new Date();
     var hhmm = now.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' });
