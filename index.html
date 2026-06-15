@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>Dashboard Viviana</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #2d3a8c;
+      --green: #2e7d32;
+      --red: #c62828;
+      --yellow: #f57f17;
+      --gray: #9e9e9e;
+      --text: #1a1a2e;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--navy);
+      color: white;
+      padding: 16px 20px 12px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    }
+
+    header h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.3px; }
+    #updated { font-size: 0.72rem; opacity: 0.7; margin-top: 3px; }
+
+    main {
+      padding: 14px;
+      max-width: 580px;
+      margin: 0 auto;
+    }
+
+    section {
+      background: white;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+
+    h2 {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--navy);
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #eef0fa;
+    }
+
+    /* --- TOTAL --- */
+    .total-block { text-align: center; padding: 4px 0 18px; }
+
+    .total-numbers {
+      font-size: 3rem;
+      font-weight: 800;
+      color: var(--navy);
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+
+    .total-numbers .slash { color: #bbb; font-size: 2.2rem; margin: 0 4px; font-weight: 400; }
+    .total-pct { font-size: 1rem; color: var(--gray); margin-top: 6px; }
+
+    /* --- PROGRESS BAR --- */
+    .bar-wrap {
+      background: #e8e8e8;
+      border-radius: 100px;
+      height: 11px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 100px;
+      transition: width 0.5s ease;
+    }
+
+    .bar-fill.green  { background: var(--green); }
+    .bar-fill.yellow { background: var(--yellow); }
+    .bar-fill.gray   { background: #ccc; }
+
+    /* --- BRAND LIST --- */
+    .brand-row {
+      padding: 10px 0;
+      border-top: 1px solid #f2f2f2;
+    }
+
+    .brand-row:first-child { border-top: none; }
+
+    .brand-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 5px;
+    }
+
+    .brand-name { font-weight: 600; font-size: 0.92rem; }
+    .brand-count { font-size: 0.82rem; color: var(--gray); }
+
+    /* --- PLAN / RUTA --- */
+    .day-row {
+      padding: 11px 12px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      background: #f5f5f5;
+      border-left: 4px solid transparent;
+    }
+
+    .day-row.today {
+      background: #eef0fa;
+      border-left-color: var(--navy);
+    }
+
+    .day-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .day-date { font-weight: 700; font-size: 0.9rem; }
+    .day-row.today .day-date { color: var(--navy); }
+
+    .today-badge {
+      background: var(--navy);
+      color: white;
+      font-size: 0.62rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 100px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-left: 6px;
+    }
+
+    .day-total { font-size: 0.8rem; color: var(--gray); white-space: nowrap; }
+
+    .day-brands {
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .chip {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 100px;
+      font-size: 0.7rem;
+      padding: 2px 9px;
+      color: #555;
+    }
+
+    /* --- STATES --- */
+    #loading {
+      text-align: center;
+      padding: 56px 16px;
+      color: var(--gray);
+    }
+
+    .spinner {
+      width: 34px; height: 34px;
+      border: 3px solid #e0e0e0;
+      border-top-color: var(--navy);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 14px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #error-block {
+      display: none;
+      margin: 40px 16px;
+      text-align: center;
+    }
+
+    #error-block p { color: var(--red); margin-bottom: 14px; font-size: 0.95rem; line-height: 1.5; }
+
+    .btn {
+      background: var(--navy);
+      color: white;
+      border: none;
+      padding: 11px 28px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Producción TikTok — Viviana</h1>
+  <p id="updated">Cargando...</p>
+</header>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <p>Cargando datos...</p>
+</div>
+
+<main id="main" style="display:none">
+  <section>
+    <h2>Tu avance de este mes</h2>
+    <div id="avance-content"></div>
+  </section>
+  <section>
+    <h2>Ruta a seguir</h2>
+    <div id="plan-content"></div>
+  </section>
+</main>
+
+<div id="error-block">
+  <p>No se pudo cargar los datos.<br>Reintentá en unos minutos.</p>
+  <button class="btn" onclick="loadData()">Reintentar</button>
+</div>
+
+<script>
+var SHEET_ID = '1V5n2q1Ng-ROmSszFEknCUiO4Q6-EmHAJuiLUAAN-178';
+var BASE = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv';
+
+// RFC 4180 CSV parser
+function parseCSV(text) {
+  var rows = [];
+  var row = [], field = '', inQ = false;
+  for (var i = 0; i < text.length; i++) {
+    var c = text[i], n = text[i + 1];
+    if (inQ) {
+      if (c === '"' && n === '"') { field += '"'; i++; }
+      else if (c === '"') { inQ = false; }
+      else { field += c; }
+    } else {
+      if (c === '"') { inQ = true; }
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\r' && n === '\n') { row.push(field); rows.push(row); row = []; field = ''; i++; }
+      else if (c === '\n' || c === '\r') { row.push(field); rows.push(row); row = []; field = ''; }
+      else { field += c; }
+    }
+  }
+  if (row.length || field) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+async function fetchSheet(sheet, range) {
+  var url = BASE + '&sheet=' + encodeURIComponent(sheet) + '&range=' + encodeURIComponent(range);
+  var res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return parseCSV(await res.text());
+}
+
+// Date helpers
+function parseDate(s) {
+  if (!s) return null;
+  s = s.trim();
+  var m;
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) return new Date(+m[3], +m[1] - 1, +m[2]);
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
+  if (m) return new Date(2000 + +m[3], +m[1] - 1, +m[2]);
+  var d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function todayMidnight() {
+  var d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function sameDay(a, b) {
+  return a && b &&
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+}
+
+function fmtDate(d) {
+  var days = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  var months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()];
+}
+
+// Sección 1: avance del mes
+// Hoja "Retainers" A3:G25 → fila 0 = headers
+// cols: 0=Marca, 1=Contratados, 3=Publicados, 4=Faltan, 5=%Avance (0..1)
+function renderAvance(rows) {
+  var totalPub = 0, totalCont = 0, totalPct = 0;
+  var brands = [];
+
+  for (var i = 1; i < rows.length; i++) {
+    var r = rows[i];
+    var marca = (r[0] || '').trim();
+    if (!marca) continue;
+    var cont = parseInt(r[1]) || 0;
+    var pub  = parseInt(r[3]) || 0;
+    var pct  = parseFloat((r[5] || '').replace(',', '.')) || 0;
+
+    if (marca.toUpperCase() === 'TOTAL') {
+      totalPub = pub; totalCont = cont; totalPct = pct;
+    } else {
+      brands.push({ marca: marca, cont: cont, pub: pub, pct: pct });
+    }
+  }
+
+  var pctRound = Math.round(totalPct * 100);
+  var barColor = pctRound >= 70 ? 'green' : pctRound >= 1 ? 'yellow' : 'gray';
+
+  var html = '<div class="total-block">'
+    + '<div class="total-numbers">' + totalPub + '<span class="slash">/</span>' + totalCont + '</div>'
+    + '<div class="total-pct">' + pctRound + '% completado este mes</div>'
+    + '</div>'
+    + '<div class="bar-wrap"><div class="bar-fill ' + barColor + '" style="width:' + Math.min(pctRound, 100) + '%"></div></div>'
+    + '<div style="margin-top:18px">';
+
+  for (var j = 0; j < brands.length; j++) {
+    var b = brands[j];
+    var bPct = Math.round(b.pct * 100);
+    var bColor = bPct >= 70 ? 'green' : bPct >= 1 ? 'yellow' : 'gray';
+    html += '<div class="brand-row">'
+      + '<div class="brand-header">'
+      + '<span class="brand-name">' + b.marca + '</span>'
+      + '<span class="brand-count">' + b.pub + ' / ' + b.cont + '</span>'
+      + '</div>'
+      + '<div class="bar-wrap"><div class="bar-fill ' + bColor + '" style="width:' + Math.min(bPct, 100) + '%"></div></div>'
+      + '</div>';
+  }
+
+  html += '</div>';
+  document.getElementById('avance-content').innerHTML = html;
+}
+
+// Sección 2: ruta a seguir
+// Hoja "Plan dinámico" A19:I50 → fila 0 = headers
+// cols: 0=Fecha, 1=Joyspring, 2=Veggie Doctor, 3=Celtic Salt, 4=K2O,
+//       5=Kind Patches MB, 6=Kind Patches Red, 7=Ceelike, 8=Total día
+function renderPlan(rows) {
+  var brandNames = ['Joyspring','Veggie Doctor','Celtic Salt','K2O','Kind Patches MB','Kind Patches Red','Ceelike'];
+  var hoy = todayMidnight();
+  var plan = [];
+
+  for (var i = 1; i < rows.length; i++) {
+    var r = rows[i];
+    var fechaStr = (r[0] || '').trim();
+    if (!fechaStr) continue;
+    var fecha = parseDate(fechaStr);
+    if (!fecha || fecha < hoy) continue;
+
+    var total = parseInt(r[8]) || 0;
+    var brands = [];
+    for (var j = 0; j < brandNames.length; j++) {
+      var v = parseInt(r[j + 1]) || 0;
+      if (v > 0) brands.push({ name: brandNames[j], v: v });
+    }
+    plan.push({ fecha: fecha, total: total, brands: brands, isToday: sameDay(fecha, hoy) });
+  }
+
+  plan.sort(function(a, b) { return a.fecha - b.fecha; });
+
+  if (!plan.length) {
+    document.getElementById('plan-content').innerHTML =
+      '<p style="color:#9e9e9e;text-align:center;padding:16px">No hay días pendientes este mes 🎉</p>';
+    return;
+  }
+
+  var html = '';
+  for (var k = 0; k < plan.length; k++) {
+    var d = plan[k];
+    var todayClass = d.isToday ? ' today' : '';
+    var badge = d.isToday ? '<span class="today-badge">hoy</span>' : '';
+    var chips = d.brands.map(function(b) {
+      return '<span class="chip">' + b.name + (b.v > 1 ? ' ×' + b.v : '') + '</span>';
+    }).join('');
+
+    html += '<div class="day-row' + todayClass + '">'
+      + '<div class="day-header">'
+      + '<span class="day-date">' + fmtDate(d.fecha) + badge + '</span>'
+      + '<span class="day-total">' + d.total + ' video' + (d.total !== 1 ? 's' : '') + '</span>'
+      + '</div>'
+      + (d.brands.length ? '<div class="day-brands">' + chips + '</div>' : '')
+      + '</div>';
+  }
+
+  document.getElementById('plan-content').innerHTML = html;
+}
+
+// Carga principal
+async function loadData() {
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('main').style.display = 'none';
+  document.getElementById('error-block').style.display = 'none';
+
+  try {
+    var results = await Promise.all([
+      fetchSheet('Retainers', 'A3:G25'),
+      fetchSheet('Plan dinámico', 'A19:I50')
+    ]);
+
+    renderAvance(results[0]);
+    renderPlan(results[1]);
+
+    var now = new Date();
+    var hhmm = now.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('updated').textContent = 'Actualizado: ' + hhmm;
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('main').style.display = 'block';
+  } catch (e) {
+    console.error(e);
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error-block').style.display = 'block';
+  }
+}
+
+setInterval(loadData, 5 * 60 * 1000);
+loadData();
+</script>
+
+</body>
+</html>
