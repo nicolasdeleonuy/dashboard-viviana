@@ -21,3 +21,11 @@ export function parseCSV(text) {
   if (row.length || field) { row.push(field); rows.push(row); }
   return rows;
 }
+
+// Normaliza el nombre de marca a una clave comparable.
+// Colapsa todas las variantes de "Kind Patches" (MB, Red, (?), con espacio) a una sola.
+export function normalizeBrand(raw) {
+  const s = (raw || '').trim().toLowerCase();
+  if (s.startsWith('kind patches')) return 'kind patches';
+  return s;
+}
