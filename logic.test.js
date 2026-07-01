@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { parseCSV } from './logic.js';
 import { normalizeBrand } from './logic.js';
 import { videosFromCSV, contractsFromCSV } from './logic.js';
+import { monthLabel, videoDate, fmtDayMonth } from './logic.js';
 
 test('parseCSV: filas y columnas simples', () => {
   const rows = parseCSV('a,b,c\n1,2,3');
@@ -57,4 +58,20 @@ test('contractsFromCSV: parsea contratados a número', () => {
   assert.deepEqual(contractsFromCSV(rows), [
     { mes: '2026-06', marca: 'Joyspring', contratados: 30 },
   ]);
+});
+
+test('monthLabel: mes-año en español capitalizado', () => {
+  assert.equal(monthLabel('2026-06'), 'Junio 2026');
+  assert.equal(monthLabel('2026-11'), 'Noviembre 2026');
+});
+
+test('videoDate: arma la fecha desde mes + día de fecha', () => {
+  const d = videoDate('2026-06', '10/06');
+  assert.equal(d.getFullYear(), 2026);
+  assert.equal(d.getMonth(), 5); // junio = 5
+  assert.equal(d.getDate(), 10);
+});
+
+test('fmtDayMonth: día + mes abreviado', () => {
+  assert.equal(fmtDayMonth(new Date(2026, 6, 10)), '10 jul');
 });

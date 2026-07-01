@@ -52,6 +52,27 @@ export function contractsFromCSV(rows) {
   return out;
 }
 
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const MESES_ABBR = ['ene', 'feb', 'mar', 'abr', 'may', 'jun',
+  'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+export function monthLabel(mes) {
+  const [y, m] = mes.split('-').map(Number);
+  const name = MESES[m - 1] || mes;
+  return name.charAt(0).toUpperCase() + name.slice(1) + ' ' + y;
+}
+
+export function videoDate(mes, fecha) {
+  const [y, m] = mes.split('-').map(Number);
+  const day = parseInt(String(fecha).split('/')[0], 10) || 1;
+  return new Date(y, m - 1, day);
+}
+
+export function fmtDayMonth(date) {
+  return date.getDate() + ' ' + MESES_ABBR[date.getMonth()];
+}
+
 // Normaliza el nombre de marca a una clave comparable.
 // Colapsa todas las variantes de "Kind Patches" (MB, Red, (?), con espacio) a una sola.
 export function normalizeBrand(raw) {
