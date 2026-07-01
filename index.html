@@ -587,6 +587,7 @@ function renderVideosBody() {
   data = data.slice().sort((a, b) => {
     let va, vb;
     if (videoSort.col === 'fecha') { va = a._ts; vb = b._ts; }
+    else if (videoSort.col === 'mesLabel') { va = a.mes; vb = b.mes; } // orden cronológico real (YYYY-MM)
     else { va = (a[videoSort.col] || '').toLowerCase(); vb = (b[videoSort.col] || '').toLowerCase(); }
     const cmp = va < vb ? -1 : va > vb ? 1 : 0;
     return videoSort.dir === 'asc' ? cmp : -cmp;
@@ -654,7 +655,6 @@ async function loadData() {
 // Exponer a window para los onclick inline del HTML.
 window.showTab = showTab;
 window.setVideoSort = setVideoSort;
-window.setVideoFilter = setVideoFilter;
 window.loadData = loadData;
 
 setInterval(loadData, 5 * 60 * 1000);
