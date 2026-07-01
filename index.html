@@ -101,19 +101,6 @@
       border-bottom: 2px solid #eef0fa;
     }
 
-    /* ---- BANNER NICO ---- */
-    #nico-banner {
-      background: #eef0fa;
-      border: 1px solid #c5caf0;
-      border-radius: 10px;
-      padding: 10px 14px;
-      margin-bottom: 14px;
-      font-size: 0.82rem;
-      color: var(--navy);
-      font-weight: 600;
-      text-align: center;
-    }
-
     /* ---- TOTAL ---- */
     .total-block { text-align: center; padding: 4px 0 18px; }
 
@@ -201,6 +188,21 @@
       color: #555;
     }
 
+    /* ---- MESES ANTERIORES (historial) ---- */
+    .month-card { border: 1px solid #eef0fa; border-radius: 10px; margin-bottom: 8px; overflow: hidden; }
+    .month-card summary {
+      list-style: none; cursor: pointer; padding: 12px 14px;
+      display: flex; justify-content: space-between; align-items: center;
+      background: #f7f8fc; font-size: 0.9rem;
+    }
+    .month-card summary::-webkit-details-marker { display: none; }
+    .m-label { font-weight: 700; color: var(--navy); }
+    .m-count { color: var(--gray); font-size: 0.85rem; }
+    .m-detail { padding: 12px 14px; }
+    .vid-list { margin-top: 12px; border-top: 1px solid #f2f2f2; padding-top: 10px; }
+    .vid-head { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.6px; color: var(--gray); margin-bottom: 8px; }
+    .vid-row { font-size: 0.8rem; color: #444; padding: 3px 0; }
+
     /* ---- VIDEOS TAB ---- */
     .filter-bar {
       display: flex;
@@ -265,6 +267,7 @@
     tr:last-child td { border-bottom: none; }
 
     .td-fecha { white-space: nowrap; color: #777; font-size: 0.78rem; }
+    .td-mes   { white-space: nowrap; color: #999; font-size: 0.76rem; }
     .td-marca { font-weight: 600; color: var(--navy); font-size: 0.8rem; white-space: nowrap; }
     .td-obs   { color: #888; font-size: 0.78rem; }
 
@@ -304,6 +307,9 @@
       font-weight: 600;
       cursor: pointer;
     }
+
+    .empty-note { color: #9e9e9e; text-align: center; padding: 8px 0; font-size: 0.9rem; }
+    .warn-note { color: var(--red); font-size: 0.82rem; margin-bottom: 12px; }
   </style>
 </head>
 <body>
@@ -325,13 +331,16 @@
 </div>
 
 <main id="main" style="display:none">
-  <div id="nico-banner" style="display:none"></div>
 
   <!-- PESTAÑA: AVANCE -->
   <div id="tab-avance" class="tab-panel active">
     <section>
-      <h2>Tu avance de este mes</h2>
+      <h2 id="avance-title">Este mes</h2>
       <div id="avance-content"></div>
+    </section>
+    <section>
+      <h2>Meses anteriores</h2>
+      <div id="history-content"></div>
     </section>
   </div>
 
@@ -364,246 +373,178 @@
   <button class="btn" onclick="loadData()">Reintentar</button>
 </div>
 
-<script>
-var SHEET_ID = '1V5n2q1Ng-ROmSszFEknCUiO4Q6-EmHAJuiLUAAN-178';
-var BASE = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv';
+<script type="module">
+import {
+  parseCSV, videosFromCSV, contractsFromCSV, buildContracts, buildMonths,
+  computeRuta, fmtDayMonth, monthLabel, videoDate,
+} from './logic.js';
 
-/* ---- CSV parser RFC 4180 ---- */
-function parseCSV(text) {
-  var rows = [];
-  var row = [], field = '', inQ = false;
-  for (var i = 0; i < text.length; i++) {
-    var c = text[i], n = text[i + 1];
-    if (inQ) {
-      if (c === '"' && n === '"') { field += '"'; i++; }
-      else if (c === '"') { inQ = false; }
-      else { field += c; }
-    } else {
-      if (c === '"') { inQ = true; }
-      else if (c === ',') { row.push(field); field = ''; }
-      else if (c === '\r' && n === '\n') { row.push(field); rows.push(row); row = []; field = ''; i++; }
-      else if (c === '\n' || c === '\r') { row.push(field); rows.push(row); row = []; field = ''; }
-      else { field += c; }
-    }
-  }
-  if (row.length || field) { row.push(field); rows.push(row); }
-  return rows;
-}
+const SHEET_ID = '1V5n2q1Ng-ROmSszFEknCUiO4Q6-EmHAJuiLUAAN-178';
+const BASE = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv';
 
-async function fetchSheet(sheet, range) {
-  var url = BASE + '&sheet=' + encodeURIComponent(sheet) + '&range=' + encodeURIComponent(range);
-  var res = await fetch(url);
+// Lee la pestaña ENTERA (sin rango fijo): nunca se corta al crecer.
+async function fetchSheet(sheet) {
+  const url = BASE + '&sheet=' + encodeURIComponent(sheet);
+  const res = await fetch(url);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return parseCSV(await res.text());
 }
 
-/* ---- Date helpers ---- */
-function parseDate(s) {
-  if (!s) return null;
-  s = s.trim();
-  var m;
-  m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
-  // dd/mm/yyyy (formato europeo — el Sheet exporta así)
-  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
-  // dd/mm/yy
-  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
-  if (m) return new Date(2000 + +m[3], +m[2] - 1, +m[1]);
-  var d = new Date(s);
-  return isNaN(d.getTime()) ? null : d;
+/* ---- helpers de presentación ---- */
+function todayYM(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
 }
-
+function daysInMonth(d) {
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+}
 function todayMidnight() {
-  var d = new Date();
+  const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
-
 function sameDay(a, b) {
-  return a && b &&
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate();
+  return a && b && a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
-
 function fmtDate(d) {
-  var days = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
-  var months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
   return days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()];
+}
+function pctClass(pct01) {
+  return pct01 >= 0.7 ? 'green' : pct01 > 0 ? 'yellow' : 'gray';
+}
+function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 /* ---- TABS ---- */
 function showTab(name) {
-  document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
-  document.querySelectorAll('.tab-btn').forEach(function(b) {
-    b.classList.toggle('active', b.dataset.tab === name);
-  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.getElementById('tab-' + name).classList.add('active');
   window.scrollTo(0, 0);
 }
 
-/* ---- BANNER NICO ---- */
-function renderNicoUpdate(rows) {
-  var text = rows && rows[0] && rows[0][0] ? rows[0][0].trim() : '';
-  var el = document.getElementById('nico-banner');
-  if (text) {
-    el.textContent = '📋 ' + text;
-    el.style.display = 'block';
-  } else {
-    el.style.display = 'none';
-  }
+/* ---- barras por marca (compartido: mes actual + historial) ---- */
+function renderBars(brands) {
+  return brands.map(b => {
+    const p = Math.round(b.pct * 100);
+    return '<div class="brand-row"><div class="brand-header">'
+      + '<span class="brand-name">' + escHtml(b.marca) + '</span>'
+      + '<span class="brand-count">' + b.pub + ' / ' + b.meta + '</span></div>'
+      + '<div class="bar-wrap"><div class="bar-fill ' + pctClass(b.pct)
+      + '" style="width:' + Math.min(p, 100) + '%"></div></div></div>';
+  }).join('');
 }
 
-/* ---- AVANCE DEL MES ---- */
-function renderAvance(rows) {
-  var totalPub = 0, totalCont = 0, totalPct = 0;
-  var brands = [];
+/* ---- AVANCE del mes actual ---- */
+function renderAvance(current) {
+  const el = document.getElementById('avance-content');
+  if (!current) { el.innerHTML = '<p class="empty-note">Sin datos para el mes actual.</p>'; return; }
 
-  for (var i = 1; i < rows.length; i++) {
-    var r = rows[i];
-    var marca = (r[0] || '').trim();
-    if (!marca) continue;
-    var cont = parseInt(r[1]) || 0;
-    var pub  = parseInt(r[3]) || 0;
-    var pct  = parseFloat((r[5] || '').replace('%', '').replace(',', '.')) || 0;
-    pct = pct / 100;
+  const p = Math.round(current.pct * 100);
+  let html = '';
+  if (!current.hasContract) html += '<p class="warn-note">Falta cargar el contrato de este mes.</p>';
+  if (current.totalPub === 0) html += '<p class="empty-note">Aún no hay videos este mes.</p>';
 
-    if (marca.toUpperCase() === 'TOTAL') {
-      totalPub = pub; totalCont = cont; totalPct = pct;
-    } else {
-      brands.push({ marca: marca, cont: cont, pub: pub, pct: pct });
-    }
-  }
-
-  var pctRound = Math.round(totalPct * 100);
-  var barColor = pctRound >= 70 ? 'green' : pctRound >= 1 ? 'yellow' : 'gray';
-
-  var html = '<div class="total-block">'
-    + '<div class="total-numbers">' + totalPub + '<span class="slash">/</span>' + totalCont + '</div>'
-    + '<div class="total-pct">' + pctRound + '% completado este mes</div>'
-    + '</div>'
-    + '<div class="bar-wrap"><div class="bar-fill ' + barColor + '" style="width:' + Math.min(pctRound, 100) + '%"></div></div>'
-    + '<div style="margin-top:18px">';
-
-  for (var j = 0; j < brands.length; j++) {
-    var b = brands[j];
-    var bPct = Math.round(b.pct * 100);
-    var bColor = bPct >= 70 ? 'green' : bPct >= 1 ? 'yellow' : 'gray';
-    html += '<div class="brand-row">'
-      + '<div class="brand-header">'
-      + '<span class="brand-name">' + b.marca + '</span>'
-      + '<span class="brand-count">' + b.pub + ' / ' + b.cont + '</span>'
-      + '</div>'
-      + '<div class="bar-wrap"><div class="bar-fill ' + bColor + '" style="width:' + Math.min(bPct, 100) + '%"></div></div>'
-      + '</div>';
-  }
-
-  html += '</div>';
-  document.getElementById('avance-content').innerHTML = html;
+  html += '<div class="total-block"><div class="total-numbers">' + current.totalPub
+    + '<span class="slash">/</span>' + current.totalMeta + '</div>'
+    + '<div class="total-pct">' + p + '% completado este mes</div></div>'
+    + '<div class="bar-wrap"><div class="bar-fill ' + pctClass(current.pct)
+    + '" style="width:' + Math.min(p, 100) + '%"></div></div>'
+    + '<div style="margin-top:18px">' + renderBars(current.brands) + '</div>';
+  el.innerHTML = html;
 }
 
-/* ---- RUTA A SEGUIR ---- */
-function renderPlan(rows) {
-  var brandNames = ['Joyspring','Veggie Doctor','Celtic Salt','K2O','Kind Patches MB','Kind Patches Red','Ceelike'];
-  var hoy = todayMidnight();
-  var plan = [];
+/* ---- MESES ANTERIORES (historial desplegable) ---- */
+function renderHistory(months) {
+  const el = document.getElementById('history-content');
+  const past = months.filter(m => !m.isCurrent);
+  if (!past.length) { el.innerHTML = '<p class="empty-note">Todavía no hay meses anteriores.</p>'; return; }
 
-  for (var i = 1; i < rows.length; i++) {
-    var r = rows[i];
-    var fechaStr = (r[0] || '').trim();
-    if (!fechaStr) continue;
-    var fecha = parseDate(fechaStr);
-    if (!fecha || fecha < hoy) continue;
-
-    var total = parseInt(r[8]) || 0;
-    var brands = [];
-    for (var j = 0; j < brandNames.length; j++) {
-      var v = parseInt(r[j + 1]) || 0;
-      if (v > 0) brands.push({ name: brandNames[j], v: v });
-    }
-    plan.push({ fecha: fecha, total: total, brands: brands, isToday: sameDay(fecha, hoy) });
+  let html = '';
+  for (const mv of past) {
+    const done = mv.brands.length && mv.brands.every(b => b.complete);
+    const badge = done ? '✅' : '⚠️';
+    const vids = mv.videos.map(v =>
+      '<div class="vid-row">' + escHtml(v.fecha) + ' · ' + escHtml(v.marca)
+      + (v.producto ? ' — ' + escHtml(v.producto) : '') + '</div>').join('');
+    html += '<details class="month-card"><summary>'
+      + '<span class="m-label">' + escHtml(mv.label) + '</span>'
+      + '<span class="m-count">' + mv.totalPub + '/' + mv.totalMeta + ' ' + badge + '</span>'
+      + '</summary><div class="m-detail">'
+      + renderBars(mv.brands)
+      + '<div class="vid-list"><div class="vid-head">Videos del mes (' + mv.videos.length + ')</div>'
+      + (vids || '<div class="vid-row" style="color:#aaa">Sin videos cargados</div>')
+      + '</div></div></details>';
   }
+  el.innerHTML = html;
+}
 
-  plan.sort(function(a, b) { return a.fecha - b.fecha; });
+/* ---- RUTA A SEGUIR (mes actual) ---- */
+function renderRuta(current, now) {
+  const el = document.getElementById('plan-content');
+  if (!current) { el.innerHTML = '<p class="empty-note">Sin datos para el mes actual.</p>'; return; }
 
-  if (!plan.length) {
-    document.getElementById('plan-content').innerHTML =
-      '<p style="color:#9e9e9e;text-align:center;padding:16px">No hay días pendientes este mes 🎉</p>';
+  const ruta = computeRuta(current, now, daysInMonth(now));
+  if (!ruta.length) {
+    el.innerHTML = '<p class="empty-note" style="padding:16px 0">No hay videos pendientes este mes 🎉</p>';
     return;
   }
-
-  var html = '';
-  for (var k = 0; k < plan.length; k++) {
-    var d = plan[k];
-    var todayClass = d.isToday ? ' today' : '';
-    var badge = d.isToday ? '<span class="today-badge">hoy</span>' : '';
-    var chips = d.brands.map(function(b) {
-      return '<span class="chip">' + b.name + (b.v > 1 ? ' ×' + b.v : '') + '</span>';
-    }).join('');
-
-    html += '<div class="day-row' + todayClass + '">'
-      + '<div class="day-header">'
-      + '<span class="day-date">' + fmtDate(d.fecha) + badge + '</span>'
+  const hoy = todayMidnight();
+  let html = '';
+  for (const d of ruta) {
+    const isToday = sameDay(d.date, hoy);
+    const todayClass = isToday ? ' today' : '';
+    const badge = isToday ? '<span class="today-badge">hoy</span>' : '';
+    const chips = d.brands.map(b =>
+      '<span class="chip">' + escHtml(b.marca) + (b.n > 1 ? ' ×' + b.n : '') + '</span>').join('');
+    html += '<div class="day-row' + todayClass + '"><div class="day-header">'
+      + '<span class="day-date">' + fmtDate(d.date) + badge + '</span>'
       + '<span class="day-total">' + d.total + ' video' + (d.total !== 1 ? 's' : '') + '</span>'
-      + '</div>'
-      + (d.brands.length ? '<div class="day-brands">' + chips + '</div>' : '')
-      + '</div>';
+      + '</div>' + (d.brands.length ? '<div class="day-brands">' + chips + '</div>' : '') + '</div>';
   }
-
-  document.getElementById('plan-content').innerHTML = html;
+  el.innerHTML = html;
 }
 
-/* ---- VIDEOS ---- */
-var allVideos = [];
-var videoSort = { col: 'fecha', dir: 'desc' };
-var videoFilter = null;
+/* ---- VIDEOS (buscador multi-mes con filtro y orden) ---- */
+let allVideos = [];
+let videoSort = { col: 'fecha', dir: 'desc' };
+let videoFilter = null;
 
-var VIDEO_COLS = [
+const VIDEO_COLS = [
+  { key: 'mesLabel', label: 'Mes' },
   { key: 'fecha',    label: 'Fecha' },
   { key: 'producto', label: 'Producto' },
   { key: 'obs',      label: 'Observaciones' },
-  { key: 'marca',    label: 'Marca' }
+  { key: 'marca',    label: 'Marca' },
 ];
 
-function processVideos(rows) {
-  // cols: A=fecha(0), B=producto(1), C=Marca(2), D=observaciones(3)
-  var result = [];
-  var brandsSet = {};
+function processVideos(videoObjs) {
+  allVideos = videoObjs.map(v => ({
+    mes: v.mes, mesLabel: monthLabel(v.mes),
+    fecha: v.fecha, producto: v.producto, marca: v.marca, obs: v.obs,
+    _ts: videoDate(v.mes, v.fecha).getTime(),
+  }));
 
-  for (var i = 1; i < rows.length; i++) {
-    var r = rows[i];
-    var fecha   = (r[0] || '').trim();
-    var producto = (r[1] || '').trim();
-    var marca   = (r[2] || '').trim();
-    var obs     = (r[3] || '').trim();
-    if (!fecha && !producto && !marca) continue;
+  const brandsSet = {};
+  for (const v of allVideos) if (v.marca) brandsSet[v.marca] = true;
+  const brands = Object.keys(brandsSet).sort((a, b) => a.localeCompare(b, 'es'));
 
-    var d = parseDate(fecha);
-    result.push({ fecha: fecha, producto: producto, marca: marca, obs: obs, _ts: d ? d.getTime() : 0 });
-    if (marca) brandsSet[marca] = true;
-  }
-
-  allVideos = result;
-
-  // Build filter chips
-  var brands = Object.keys(brandsSet).sort(function(a,b){ return a.localeCompare(b, 'es'); });
-  var filterBar = document.getElementById('filter-bar');
+  const filterBar = document.getElementById('filter-bar');
   filterBar.innerHTML = '';
-
-  var allChip = document.createElement('button');
+  const allChip = document.createElement('button');
   allChip.className = 'filter-chip active';
   allChip.textContent = 'Todas';
-  allChip.addEventListener('click', function() { setVideoFilter(null); });
+  allChip.addEventListener('click', () => setVideoFilter(null));
   filterBar.appendChild(allChip);
-
-  for (var j = 0; j < brands.length; j++) {
-    (function(brand) {
-      var chip = document.createElement('button');
-      chip.className = 'filter-chip';
-      chip.textContent = brand;
-      chip.addEventListener('click', function() { setVideoFilter(brand); });
-      filterBar.appendChild(chip);
-    })(brands[j]);
+  for (const brand of brands) {
+    const chip = document.createElement('button');
+    chip.className = 'filter-chip';
+    chip.textContent = brand;
+    chip.addEventListener('click', () => setVideoFilter(brand));
+    filterBar.appendChild(chip);
   }
 
   renderVideosHeader();
@@ -612,78 +553,60 @@ function processVideos(rows) {
 
 function setVideoFilter(marca) {
   videoFilter = marca;
-  document.querySelectorAll('#filter-bar .filter-chip').forEach(function(c) {
-    var isAll = (marca === null && c.textContent === 'Todas');
-    var isBrand = (marca !== null && c.textContent === marca);
+  document.querySelectorAll('#filter-bar .filter-chip').forEach(c => {
+    const isAll = marca === null && c.textContent === 'Todas';
+    const isBrand = marca !== null && c.textContent === marca;
     c.classList.toggle('active', isAll || isBrand);
   });
   renderVideosBody();
 }
 
 function setVideoSort(col) {
-  if (videoSort.col === col) {
-    videoSort.dir = videoSort.dir === 'asc' ? 'desc' : 'asc';
-  } else {
-    videoSort.col = col;
-    videoSort.dir = 'asc';
-  }
+  if (videoSort.col === col) videoSort.dir = videoSort.dir === 'asc' ? 'desc' : 'asc';
+  else { videoSort.col = col; videoSort.dir = 'asc'; }
   renderVideosHeader();
   renderVideosBody();
 }
 
 function renderVideosHeader() {
-  var html = '<tr>';
-  for (var i = 0; i < VIDEO_COLS.length; i++) {
-    var col = VIDEO_COLS[i];
-    var isActive = videoSort.col === col.key;
-    var arrow = isActive ? (videoSort.dir === 'asc' ? '▲' : '▼') : '⇅';
-    html += '<th onclick="setVideoSort(\'' + col.key + '\')">'
-      + col.label
-      + ' <span class="sort-icon' + (isActive ? ' on' : '') + '">' + arrow + '</span>'
-      + '</th>';
+  let html = '<tr>';
+  for (const col of VIDEO_COLS) {
+    const isActive = videoSort.col === col.key;
+    const arrow = isActive ? (videoSort.dir === 'asc' ? '▲' : '▼') : '⇅';
+    html += '<th onclick="setVideoSort(\'' + col.key + '\')">' + col.label
+      + ' <span class="sort-icon' + (isActive ? ' on' : '') + '">' + arrow + '</span></th>';
   }
   html += '</tr>';
   document.getElementById('videos-thead').innerHTML = html;
 }
 
 function renderVideosBody() {
-  var data = allVideos;
+  let data = allVideos;
+  if (videoFilter) data = data.filter(v => v.marca === videoFilter);
 
-  if (videoFilter) {
-    data = data.filter(function(v) { return v.marca === videoFilter; });
-  }
-
-  data = data.slice().sort(function(a, b) {
-    var va, vb;
-    if (videoSort.col === 'fecha') {
-      va = a._ts; vb = b._ts;
-    } else {
-      va = (a[videoSort.col] || '').toLowerCase();
-      vb = (b[videoSort.col] || '').toLowerCase();
-    }
-    var cmp = va < vb ? -1 : va > vb ? 1 : 0;
+  data = data.slice().sort((a, b) => {
+    let va, vb;
+    if (videoSort.col === 'fecha') { va = a._ts; vb = b._ts; }
+    else { va = (a[videoSort.col] || '').toLowerCase(); vb = (b[videoSort.col] || '').toLowerCase(); }
+    const cmp = va < vb ? -1 : va > vb ? 1 : 0;
     return videoSort.dir === 'asc' ? cmp : -cmp;
   });
 
   document.getElementById('videos-meta').textContent =
     data.length + ' video' + (data.length !== 1 ? 's' : '');
 
-  var html = '';
-  for (var i = 0; i < data.length; i++) {
-    var v = data[i];
+  let html = '';
+  for (const v of data) {
     html += '<tr>'
+      + '<td class="td-mes">' + escHtml(v.mesLabel) + '</td>'
       + '<td class="td-fecha">' + escHtml(v.fecha) + '</td>'
       + '<td>' + escHtml(v.producto) + '</td>'
       + '<td class="td-obs">' + escHtml(v.obs) + '</td>'
       + '<td class="td-marca">' + escHtml(v.marca) + '</td>'
       + '</tr>';
   }
-
-  document.getElementById('videos-tbody').innerHTML = html || '<tr><td colspan="4" style="text-align:center;padding:20px;color:#aaa">Sin resultados</td></tr>';
-}
-
-function escHtml(s) {
-  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  document.getElementById('videos-tbody').innerHTML =
+    html || '<tr><td colspan="5" style="text-align:center;padding:20px;color:#aaa">Sin resultados</td></tr>';
 }
 
 /* ---- CARGA PRINCIPAL ---- */
@@ -693,21 +616,31 @@ async function loadData() {
   document.getElementById('error-block').style.display = 'none';
 
   try {
-    var results = await Promise.all([
-      fetchSheet('Retainers', 'A3:G25'),
-      fetchSheet('Plan dinámico', 'A19:I50'),
-      fetchSheet('Resumen', 'A13:D13'),
-      fetchSheet('videos', 'A1:D300')
+    const [videoRows, contractRows] = await Promise.all([
+      fetchSheet('Videos'),
+      fetchSheet('Contratos'),
     ]);
 
-    renderAvance(results[0]);
-    renderPlan(results[1]);
-    renderNicoUpdate(results[2]);
-    processVideos(results[3]);
+    const now = new Date();
+    const videoObjs = videosFromCSV(videoRows);
+    const months = buildMonths(
+      videoObjs,
+      buildContracts(contractsFromCSV(contractRows)),
+      todayYM(now),
+    );
+    const current = months.find(m => m.isCurrent) || null;
 
-    var now = new Date();
-    var hhmm = now.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' });
-    document.getElementById('updated').textContent = 'Actualizado: ' + hhmm;
+    document.getElementById('avance-title').textContent =
+      current ? 'Este mes — ' + current.label : 'Este mes';
+    renderAvance(current);
+    renderHistory(months);
+    renderRuta(current, now);
+    processVideos(videoObjs);
+
+    let last = null;
+    for (const m of months) if (m.lastDate && (!last || m.lastDate > last)) last = m.lastDate;
+    document.getElementById('updated').textContent =
+      last ? 'Datos hasta el ' + fmtDayMonth(last) : 'Sin datos cargados';
 
     document.getElementById('loading').style.display = 'none';
     document.getElementById('main').style.display = 'block';
@@ -717,6 +650,12 @@ async function loadData() {
     document.getElementById('error-block').style.display = 'block';
   }
 }
+
+// Exponer a window para los onclick inline del HTML.
+window.showTab = showTab;
+window.setVideoSort = setVideoSort;
+window.setVideoFilter = setVideoFilter;
+window.loadData = loadData;
 
 setInterval(loadData, 5 * 60 * 1000);
 loadData();
