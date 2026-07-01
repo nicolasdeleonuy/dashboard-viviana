@@ -81,6 +81,35 @@ export function normalizeBrand(raw) {
   return s;
 }
 
+export function computeRuta(monthView, todayDate, endDay) {
+  const pool = [];
+  for (const b of monthView.brands) {
+    const rem = Math.max(b.meta - b.pub, 0);
+    for (let i = 0; i < rem; i++) pool.push(b.marca);
+  }
+  const days = [];
+  for (let d = todayDate.getDate(); d <= endDay; d++) {
+    days.push(new Date(todayDate.getFullYear(), todayDate.getMonth(), d));
+  }
+  if (!pool.length || !days.length) return [];
+
+  const perDay = Math.ceil(pool.length / days.length);
+  const out = [];
+  let idx = 0;
+  for (const day of days) {
+    const slot = pool.slice(idx, idx + perDay);
+    idx += slot.length;
+    const counts = new Map();
+    for (const m of slot) counts.set(m, (counts.get(m) || 0) + 1);
+    out.push({
+      date: day, total: slot.length,
+      brands: [...counts.entries()].map(([marca, n]) => ({ marca, n })),
+    });
+    if (idx >= pool.length) break;
+  }
+  return out;
+}
+
 export function buildContracts(contractObjs) {
   const map = new Map();
   for (const c of contractObjs) {

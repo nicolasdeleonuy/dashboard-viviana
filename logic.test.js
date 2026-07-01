@@ -5,6 +5,7 @@ import { normalizeBrand } from './logic.js';
 import { videosFromCSV, contractsFromCSV } from './logic.js';
 import { monthLabel, videoDate, fmtDayMonth } from './logic.js';
 import { buildContracts, buildMonths } from './logic.js';
+import { computeRuta } from './logic.js';
 
 test('parseCSV: filas y columnas simples', () => {
   const rows = parseCSV('a,b,c\n1,2,3');
@@ -120,4 +121,21 @@ test('buildMonths: mes actual sin videos aparece igual', () => {
   assert.ok(ago);
   assert.equal(ago.isCurrent, true);
   assert.equal(ago.totalPub, 0);
+});
+
+test('computeRuta: reparte lo que falta en los días restantes', () => {
+  const mv = { brands: [
+    { marca: 'Joyspring', pub: 0, meta: 4 },
+    { marca: 'K2O', pub: 0, meta: 2 },
+  ] };
+  const ruta = computeRuta(mv, new Date(2026, 6, 29), 31); // 29,30,31 -> 3 días, 6 videos
+  const totalRepartido = ruta.reduce((s, d) => s + d.total, 0);
+  assert.equal(totalRepartido, 6);
+  assert.equal(ruta.length, 3);
+  assert.equal(ruta[0].total, 2); // ceil(6/3)
+});
+
+test('computeRuta: vacío si no falta nada', () => {
+  const mv = { brands: [{ marca: 'Joyspring', pub: 5, meta: 4 }] };
+  assert.deepEqual(computeRuta(mv, new Date(2026, 6, 29), 31), []);
 });
