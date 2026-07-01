@@ -83,30 +83,33 @@ export function normalizeBrand(raw) {
 }
 
 export function computeRuta(monthView, todayDate, endDay) {
-  const pool = [];
-  for (const b of monthView.brands) {
-    const rem = Math.max(b.meta - b.pub, 0);
-    for (let i = 0; i < rem; i++) pool.push(b.marca);
-  }
   const days = [];
   for (let d = todayDate.getDate(); d <= endDay; d++) {
     days.push(new Date(todayDate.getFullYear(), todayDate.getMonth(), d));
   }
-  if (!pool.length || !days.length) return [];
+  const D = days.length;
+  if (!D) return [];
 
-  const perDay = Math.ceil(pool.length / days.length);
+  // Repartir CADA marca pareja a lo largo de los días (centrado con k+0.5), en vez de
+  // amontonar toda una marca en bloque. Así cada día queda con una mezcla de marcas.
+  const buckets = days.map(() => new Map());
+  for (const b of monthView.brands) {
+    const rem = Math.max(b.meta - b.pub, 0);
+    for (let k = 0; k < rem; k++) {
+      const idx = Math.min(Math.floor(((k + 0.5) * D) / rem), D - 1);
+      buckets[idx].set(b.marca, (buckets[idx].get(b.marca) || 0) + 1);
+    }
+  }
+
   const out = [];
-  let idx = 0;
-  for (const day of days) {
-    const slot = pool.slice(idx, idx + perDay);
-    idx += slot.length;
-    const counts = new Map();
-    for (const m of slot) counts.set(m, (counts.get(m) || 0) + 1);
+  for (let i = 0; i < days.length; i++) {
+    const m = buckets[i];
+    if (!m.size) continue; // solo días con videos sugeridos
     out.push({
-      date: day, total: slot.length,
-      brands: [...counts.entries()].map(([marca, n]) => ({ marca, n })),
+      date: days[i],
+      total: [...m.values()].reduce((s, n) => s + n, 0),
+      brands: [...m.entries()].map(([marca, n]) => ({ marca, n })),
     });
-    if (idx >= pool.length) break;
   }
   return out;
 }

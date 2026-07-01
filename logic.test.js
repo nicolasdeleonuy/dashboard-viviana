@@ -131,9 +131,25 @@ test('computeRuta: reparte lo que falta en los días restantes', () => {
   ] };
   const ruta = computeRuta(mv, new Date(2026, 6, 29), 31); // 29,30,31 -> 3 días, 6 videos
   const totalRepartido = ruta.reduce((s, d) => s + d.total, 0);
-  assert.equal(totalRepartido, 6);
-  assert.equal(ruta.length, 3);
-  assert.equal(ruta[0].total, 2); // ceil(6/3)
+  assert.equal(totalRepartido, 6); // reparte TODO lo que falta
+  assert.ok(ruta.length <= 3);     // no inventa días fuera de mes
+});
+
+test('computeRuta: intercala marcas y no las amontona en bloque', () => {
+  const mv = { brands: [
+    { marca: 'Joyspring', pub: 0, meta: 6 },
+    { marca: 'K2O', pub: 0, meta: 6 },
+  ] };
+  const ruta = computeRuta(mv, new Date(2026, 6, 1), 6); // 6 días, 12 videos (2/día)
+  assert.equal(ruta.reduce((s, d) => s + d.total, 0), 12);
+  // cada marca repartida pareja: nunca más de 2 de la misma marca en un día
+  for (const d of ruta) for (const b of d.brands) {
+    assert.ok(b.n <= 2, `${b.marca} amontonada: ${b.n} en un día`);
+  }
+  // las dos marcas aparecen a lo largo del mes (no una toda al principio y otra toda al final)
+  const joyDays = ruta.filter(d => d.brands.some(b => b.marca === 'Joyspring')).length;
+  const k2oDays = ruta.filter(d => d.brands.some(b => b.marca === 'K2O')).length;
+  assert.ok(joyDays >= 3 && k2oDays >= 3, `mal repartidas: Joy en ${joyDays} días, K2O en ${k2oDays}`);
 });
 
 test('computeRuta: vacío si no falta nada', () => {
