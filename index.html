@@ -486,6 +486,7 @@ function renderHistory(months) {
 function renderRuta(current, now) {
   const el = document.getElementById('plan-content');
   if (!current) { el.innerHTML = '<p class="empty-note">Sin datos para el mes actual.</p>'; return; }
+  if (!current.hasContract) { el.innerHTML = '<p class="warn-note">Falta cargar el contrato de este mes.</p>'; return; }
 
   const ruta = computeRuta(current, now, daysInMonth(now));
   if (!ruta.length) {
@@ -522,6 +523,7 @@ const VIDEO_COLS = [
 ];
 
 function processVideos(videoObjs) {
+  videoFilter = null; // el filtro se resetea a "Todas" al reconstruir (evita highlight desincronizado tras auto-refresh)
   allVideos = videoObjs.map(v => ({
     mes: v.mes, mesLabel: monthLabel(v.mes),
     fecha: v.fecha, producto: v.producto, marca: v.marca, obs: v.obs,
