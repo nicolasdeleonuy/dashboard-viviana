@@ -4,6 +4,7 @@ import { parseCSV } from './logic.js';
 import { normalizeBrand } from './logic.js';
 import { videosFromCSV, contractsFromCSV } from './logic.js';
 import { monthLabel, videoDate, fmtDayMonth } from './logic.js';
+import { buildContracts, buildMonths } from './logic.js';
 
 test('parseCSV: filas y columnas simples', () => {
   const rows = parseCSV('a,b,c\n1,2,3');
@@ -74,4 +75,49 @@ test('videoDate: arma la fecha desde mes + día de fecha', () => {
 
 test('fmtDayMonth: día + mes abreviado', () => {
   assert.equal(fmtDayMonth(new Date(2026, 6, 10)), '10 jul');
+});
+
+const CONTRACTS = [
+  { mes: '2026-06', marca: 'Joyspring', contratados: 2 },
+  { mes: '2026-06', marca: 'Kind Patches', contratados: 1 },
+  { mes: '2026-07', marca: 'Joyspring', contratados: 2 },
+];
+const VIDEOS = [
+  { mes: '2026-06', fecha: '10/06', producto: 'a', marca: 'Joyspring', obs: '' },
+  { mes: '2026-06', fecha: '11/06', producto: 'b', marca: 'joyspring', obs: '' },
+  { mes: '2026-06', fecha: '12/06', producto: 'c', marca: 'Kind Patches MB', obs: '' },
+  { mes: '2026-06', fecha: '09/06', producto: 'd', marca: 'Medicube', obs: '' }, // no-retainer
+  { mes: '2026-07', fecha: '02/07', producto: 'e', marca: 'Joyspring', obs: '' },
+];
+
+test('buildContracts: agrupa por mes y agrega key normalizada', () => {
+  const map = buildContracts(CONTRACTS);
+  assert.equal(map.get('2026-06').length, 2);
+  assert.equal(map.get('2026-06')[1].key, 'kind patches');
+});
+
+test('buildMonths: cuenta por marca contra el contrato del mes', () => {
+  const months = buildMonths(VIDEOS, buildContracts(CONTRACTS), '2026-07');
+  // orden: más nuevo primero
+  assert.deepEqual(months.map(m => m.mes), ['2026-07', '2026-06']);
+
+  const jun = months.find(m => m.mes === '2026-06');
+  const joy = jun.brands.find(b => b.marca === 'Joyspring');
+  assert.equal(joy.pub, 2);           // "Joyspring" + "joyspring"
+  assert.equal(joy.meta, 2);
+  assert.equal(joy.complete, true);
+  const kp = jun.brands.find(b => b.marca === 'Kind Patches');
+  assert.equal(kp.pub, 1);            // "Kind Patches MB" cuenta
+  assert.equal(jun.totalPub, 3);
+  assert.equal(jun.totalMeta, 3);
+  assert.equal(jun.extraBrands.length, 1); // Medicube
+  assert.equal(jun.extraBrands[0].marca, 'Medicube');
+});
+
+test('buildMonths: mes actual sin videos aparece igual', () => {
+  const months = buildMonths([], buildContracts(CONTRACTS), '2026-08');
+  const ago = months.find(m => m.mes === '2026-08');
+  assert.ok(ago);
+  assert.equal(ago.isCurrent, true);
+  assert.equal(ago.totalPub, 0);
 });

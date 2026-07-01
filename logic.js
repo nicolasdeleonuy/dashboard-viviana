@@ -80,3 +80,64 @@ export function normalizeBrand(raw) {
   if (s.startsWith('kind patches')) return 'kind patches';
   return s;
 }
+
+export function buildContracts(contractObjs) {
+  const map = new Map();
+  for (const c of contractObjs) {
+    if (!map.has(c.mes)) map.set(c.mes, []);
+    map.get(c.mes).push({ marca: c.marca, contratados: c.contratados, key: normalizeBrand(c.marca) });
+  }
+  return map;
+}
+
+export function buildMonths(videoObjs, contractsMap, todayYM) {
+  const monthsSet = new Set(videoObjs.map(v => v.mes));
+  monthsSet.add(todayYM);
+  const months = [...monthsSet].sort().reverse(); // más nuevo primero
+
+  return months.map(mes => {
+    const vids = videoObjs.filter(v => v.mes === mes);
+    const contract = contractsMap.get(mes) || [];
+    const hasContract = contractsMap.has(mes);
+
+    const counts = new Map();
+    for (const v of vids) {
+      const k = normalizeBrand(v.marca);
+      counts.set(k, (counts.get(k) || 0) + 1);
+    }
+
+    const brands = contract.map(c => {
+      const pub = counts.get(c.key) || 0;
+      return {
+        marca: c.marca, pub, meta: c.contratados,
+        complete: pub >= c.contratados,
+        pct: c.contratados ? Math.min(pub / c.contratados, 1) : 0,
+      };
+    });
+
+    const contractKeys = new Set(contract.map(c => c.key));
+    const extraMap = new Map();
+    for (const v of vids) {
+      const k = normalizeBrand(v.marca);
+      if (contractKeys.has(k)) continue;
+      if (!extraMap.has(k)) extraMap.set(k, { marca: v.marca, pub: 0 });
+      extraMap.get(k).pub++;
+    }
+    const extraBrands = [...extraMap.values()];
+
+    const totalPub = brands.reduce((s, b) => s + b.pub, 0);
+    const totalMeta = brands.reduce((s, b) => s + b.meta, 0);
+    const pct = totalMeta ? Math.min(totalPub / totalMeta, 1) : 0;
+
+    let lastDate = null;
+    for (const v of vids) {
+      const d = videoDate(v.mes, v.fecha);
+      if (!lastDate || d > lastDate) lastDate = d;
+    }
+
+    return {
+      mes, label: monthLabel(mes), isCurrent: mes === todayYM, hasContract,
+      brands, extraBrands, totalPub, totalMeta, pct, lastDate, videos: vids,
+    };
+  });
+}
