@@ -26,15 +26,16 @@ export function videosFromCSV(rows) {
   const out = [];
   for (let i = 1; i < rows.length; i++) {
     const r = rows[i];
-    const mes = (r[0] || '').trim();
-    const marca = (r[3] || '').trim();
+    // Columnas reales de la pestaña Videos: A=fecha, B=producto, C=marca, D=obs, E=mes
+    const mes = (r[4] || '').trim();
+    const marca = (r[2] || '').trim();
     if (!mes || !marca) continue;
     out.push({
       mes,
-      fecha: (r[1] || '').trim(),
-      producto: (r[2] || '').trim(),
+      fecha: (r[0] || '').trim(),
+      producto: (r[1] || '').trim(),
       marca,
-      obs: (r[4] || '').trim(),
+      obs: (r[3] || '').trim(),
     });
   }
   return out;

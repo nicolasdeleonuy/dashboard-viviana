@@ -39,12 +39,13 @@ test('normalizeBrand: vacío o nulo', () => {
   assert.equal(normalizeBrand(null), '');
 });
 
-test('videosFromCSV: mapea columnas y saltea encabezado + vacíos', () => {
+test('videosFromCSV: mapea columnas (A=fecha,B=producto,C=marca,D=obs,E=mes) y saltea encabezado + vacíos', () => {
   const rows = [
-    ['mes', 'fecha', 'producto', 'marca', 'obs'],
-    ['2026-06', '10/06', 'para patrol', 'Joyspring', ''],
-    ['', '', '', '', ''],              // vacía -> se saltea
-    ['2026-06', '11/06', 'x', '', ''], // sin marca -> se saltea
+    ['fecha', 'producto', 'Marca', 'observaciones', 'mes'],
+    ['10/06', 'para patrol', 'Joyspring', '', '2026-06'],
+    ['', '', '', '', ''],                 // vacía -> se saltea
+    ['11/06', 'x', '', '', '2026-06'],    // sin marca -> se saltea
+    ['12/06', 'y', 'K2O', 'nota', ''],    // sin mes -> se saltea
   ];
   assert.deepEqual(videosFromCSV(rows), [
     { mes: '2026-06', fecha: '10/06', producto: 'para patrol', marca: 'Joyspring', obs: '' },
